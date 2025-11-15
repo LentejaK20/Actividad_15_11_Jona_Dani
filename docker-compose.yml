@@ -1,0 +1,52 @@
+services:
+  web:
+    build: ./app-php                 
+    container_name: web-cloud
+    ports:
+      - "8080:80"
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_NAME=trabajo15-11
+      - DB_USER=cloudteam
+      - DB_PASSWORD=pass123
+      - APP_REQUIRED_PORT=8080
+    healthcheck:
+      test: ["CMD", "php", "/var/www/html/healthcheck.php"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    volumes:
+      - ./app-php:/var/www/html
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - app-cloud    
+  db:
+    image: mariadb:11
+    container_name: db-cloud
+    volumes: 
+      - dbcloud:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    environment:
+        MARIADB_DATABASE: trabajo15-11
+        MARIADB_USER: cloudteam
+        MARIADB_PASSWORD: pass123
+        MARIADB_ROOT_PASSWORD: root 
+    healthcheck:
+      test: ["CMD", "mariadb", "-h", "localhost", "-u", "cloudteam", "-ppass123", "-D", "trabajo15-11", "-e", "SELECT 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-cloud
+    restart: unless-stopped
+
+
+volumes:
+  dbcloud:
+networks:
+  app-cloud:
+
